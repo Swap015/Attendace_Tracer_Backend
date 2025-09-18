@@ -1,92 +1,89 @@
-import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/tokenUtil.mjs";
 
-// Register / Signup
-export const signup = async (req, res) => {
+
+export const register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
-        // check if user exists
         const existingUser = await User.findOne({ email });
-        if (existingUser)
+        if (existingUser) {
             return res.status(400).json({ message: "Email already registered" });
+        }
 
-        // hash password
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // create user
-        const newUser = new User({ name, email, passwordHash, role });
-        await newUser.save();
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword,
+            role,
+        });
 
-        res.status(201).json({ message: "User registered successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
+        sendTokens(res, user);
+
+        res.status(201).json({ message: "User registered successfully", user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-// Login
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // find user
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-        // compare password
-        const isMatch = await bcrypt.compare(password, user.passwordHash);
-        if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+        const checkPassword = await bcrypt.compare(password, user.password);
+        if (!checkPassword) return res.status(400).json({ message: "Invalid credentials" });
 
-        // create JWT token
-        const token = jwt.sign(
-            { id: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: "1d" }
-        );
+        const accessToken = generateAccessToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
 
-        res.status(200).json({
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-            },
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+            maxAge: 15 * 60 * 1000
+        })
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+            maxAge: 30 * 24 * 60 * 60 * 1000
         });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
+
+        res.status(200).json({ msg: "Login successful", accessToken, refreshToken });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
-// Logout
-export const logout = async (req, res) => {
-    // With JWT, logout is handled on client side by removing token
-    res.status(200).json({ message: "Logged out successfully" });
-};
 
-// Get single user
-export const getUser = async (req, res) => {
+export const logoutUser = async (req, res) => {
+
     try {
-        const user = await User.findById(req.params.id).select("-passwordHash");
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.status(200).json(user);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(401).json({ msg: "something's wrong" });
+        }
+        user.refreshToken = null;
+        await user.save();
+        res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax"
+        });
+        res.status(200).json({ msg: "Logged Out" });
     }
-};
-
-// Get all users (admin only)
-export const getAllUsers = async (req, res) => {
-    try {
-        const users = await User.find().select("-passwordHash");
-        res.status(200).json(users);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
+    catch (err) {
+        res.status(400).json({ msg: "Logout failed" });
     }
 };
