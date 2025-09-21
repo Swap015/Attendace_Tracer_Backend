@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(cors({
-    origin: "https://attendace-tracer-frontend.vercel.app",
+    origin: "https://attendace-tracer-frontend-b51hpzrjm-swapnil-motghares-projects.vercel.app",
     credentials: true,
 }));
 
