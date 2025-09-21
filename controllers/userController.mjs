@@ -61,7 +61,15 @@ export const login = async (req, res) => {
             maxAge: 10 * 24 * 60 * 60 * 1000
         });
 
-        res.status(200).json({ msg: "Login successful", accessToken, refreshToken });
+        res.status(200).json({
+            msg: "Login successful",
+            accessToken,
+            refreshToken,
+            role: user.role,
+            name: user.name,
+            email: user.email
+        });
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -107,3 +115,32 @@ export const getUser = async (req, res) => {
         res.status(400).json({ msg: "Failed to get user." });
     }
 }
+
+export const refreshToken = async (req, res) => {
+    try {
+        const token = req.cookies?.refreshToken;
+        if (!token) return res.status(401).json({ msg: "No refresh token" });
+
+
+        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+
+        const user = await User.findById(decoded.id);
+        if (!user || user.refreshToken !== token) {
+            return res.status(403).json({ msg: "Invalid refresh token" });
+        }
+
+        const newAccessToken = generateAccessToken(user);
+
+
+        res.cookie("accessToken", newAccessToken, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+            maxAge: 2 * 60 * 60 * 1000,
+        });
+
+        res.status(200).json({ msg: "New access token issued", accessToken: newAccessToken });
+    } catch (err) {
+        return res.status(403).json({ msg: "Invalid or expired refresh token" });
+    }
+};

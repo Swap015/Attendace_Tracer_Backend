@@ -1,5 +1,5 @@
 import Leave from "../models/leave.js";
-
+import { sendLeaveStatusEmail } from "../utils/emailService.mjs";
 
 export const applyLeave = async (req, res) => {
     try {
@@ -58,7 +58,10 @@ export const updateLeaveStatus = async (req, res) => {
             leaveId,
             { status },
             { new: true }
-        );
+        ).populate("user", "name email");
+
+
+        await sendLeaveStatusEmail(leave.user.email, leave.user.name, status);
 
         res.status(200).json({ msg: `Leave ${status}`, leave });
     } catch (err) {

@@ -5,18 +5,25 @@ import attendanceRoutes from "./routes/attendanceRoutes.mjs"
 import userRoutes from "./routes/userRoutes.mjs"
 import leaveRoutes from "./routes/leaveRoutes.mjs"
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 
 
 dotenv.config();
 const app = express();
 
-app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+}));
+
 
 // Connect MongoDB
 mongoose
     .connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB connected"))
+    .then(() => console.log("MongoDB connected ✅✅"))
     .catch(err => console.error(err));
 
 
@@ -26,5 +33,5 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/user", userRoutes);
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

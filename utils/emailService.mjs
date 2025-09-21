@@ -1,42 +1,51 @@
-import http from "http";
+
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const server = http.createServer((req, res) => {
-    const EMAIL_USER = process.env.EMAIL_USER;
-    const EMAIL_PASS = process.env.EMAIL_PASS;
-    const PORT = process.env.PORT;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            user: EMAIL_USER,
-            pass: EMAIL_PASS,
-        },
-    });
 
+
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
+    },
+});
+
+export const sendLateEmail = async (to, name, checkInTime) => {
     const mailOptions = {
         from: EMAIL_USER,
-        to: EMAIL_USER,
-        subject: "Test Email",
-        text: "This is a test email",
+        to,
+        subject: "Late Attendance Alert ",
+        text: `Hello ${name},\n\nYou checked in late today at ${checkInTime.toLocaleTimeString()}.\nPlease be punctual.\n\nRegards,\nAttendance Team`,
     };
 
-    transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-            console.log("Error:", err);
-            res.statusCode = 500;
-            res.end("Failed to send email");
-        } else {
-            console.log("SUCCESS!", info.response);
-            res.statusCode = 200;
-            res.end("Email Sent Successfully");
-        }
-    });
-});
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Late email sent to ${to}`);
+    } catch (err) {
+        console.error("Email send error:", err.message);
+    }
+};
 
-server.listen(PORT, () => {
-    console.log(`Server running at PORT ${PORT}`);
-});
+
+export const sendLeaveStatusEmail = async (to, name, status, reason = "") => {
+    const subject = `Leave ${status.toUpperCase()}`;
+    const text =
+        status === "approved"
+            ? `Hello ${name},\n\nYour leave has been approved.\n\nRegards,\nHR Team`
+            : `Hello ${name},\n\nYour leave has been rejected.\nReason: ${reason}\n\nRegards,\nHR Team`;
+
+    try {
+        await transporter.sendMail({ from: EMAIL_USER, to, subject, text });
+        console.log(`Leave status email sent to ${to}`);
+    } catch (err) {
+        console.error("Error sending leave status email:", err.message);
+    }
+};
+

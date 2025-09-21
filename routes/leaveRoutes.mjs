@@ -11,6 +11,6 @@ router.get("/myLeaves", verifyUser, getMyLeaves);
 
 router.get("/allLeaves", verifyUser, verifyRole("admin"), getAllLeaves);
 
-router.put("/:leaveId/status", verifyUser, verifyRole("admin"), updateLeaveStatus);
+router.put("/status/:leaveId", verifyUser, verifyRole("admin"), updateLeaveStatus);
 
 export default router;

@@ -7,13 +7,13 @@ const AttendanceSchema = new mongoose.Schema({
         required: true,
     },
     date: {
-        type: String, 
+        type: String,
         required: true,
     },
-    punchIn: {
+    checkIn: {
         type: Date,
     },
-    punchOut: {
+    checkOut: {
         type: Date,
     },
     status: {
