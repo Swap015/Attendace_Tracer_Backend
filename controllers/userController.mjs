@@ -65,9 +65,9 @@ export const login = async (req, res) => {
             msg: "Login successful",
             accessToken,
             refreshToken,
-            role: user.role,
-            name: user.name,
-            email: user.email
+            role: user.role,   
+            name: user.name,   
+            email: user.email 
         });
 
     } catch (err) {
@@ -134,7 +134,7 @@ export const refreshToken = async (req, res) => {
 
         res.cookie("accessToken", newAccessToken, {
             httpOnly: true,
-            secure: false,
+            secure: false, 
             sameSite: "lax",
             maxAge: 2 * 60 * 60 * 1000,
         });
