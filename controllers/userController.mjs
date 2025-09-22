@@ -66,9 +66,9 @@ export const login = async (req, res) => {
             msg: "Login successful",
             accessToken,
             refreshToken,
-            role: user.role,   
-            name: user.name,   
-            email: user.email 
+            role: user.role,
+            name: user.name,
+            email: user.email
         });
 
     } catch (err) {
@@ -122,7 +122,6 @@ export const refreshToken = async (req, res) => {
         const token = req.cookies?.refreshToken;
         if (!token) return res.status(401).json({ msg: "No refresh token" });
 
-
         const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 
         const user = await User.findById(decoded.id);
@@ -131,16 +130,26 @@ export const refreshToken = async (req, res) => {
         }
 
         const newAccessToken = generateAccessToken(user);
+        const newRefreshToken = generateRefreshToken(user);
 
+        user.refreshToken = newRefreshToken;
+        await user.save();
 
         res.cookie("accessToken", newAccessToken, {
             httpOnly: true,
-            secure: true, 
+            secure: true,
             sameSite: "none",
             maxAge: 2 * 60 * 60 * 1000,
         });
 
-        res.status(200).json({ msg: "New access token issued", accessToken: newAccessToken });
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: "none",
+            maxAge: 10 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(200).json({ msg: "New access token issued" });
     } catch (err) {
         return res.status(403).json({ msg: "Invalid or expired refresh token" });
     }
