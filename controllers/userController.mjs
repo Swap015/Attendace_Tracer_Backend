@@ -3,6 +3,7 @@ import User from "../models/user.js";
 import jwt from "jsonwebtoken";
 import { generateAccessToken, generateRefreshToken } from "../utils/tokenUtil.mjs";
 
+const isProduction = process.env.NODE_ENV === "production";
 
 export const register = async (req, res) => {
     try {
@@ -50,15 +51,15 @@ export const login = async (req, res) => {
 
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
             maxAge: 2 * 60 * 60 * 1000
         })
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
             maxAge: 10 * 24 * 60 * 60 * 1000
         });
 
@@ -88,13 +89,13 @@ export const logoutUser = async (req, res) => {
         await user.save();
         res.clearCookie("accessToken", {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
         });
         res.clearCookie("refreshToken", {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
         });
 
         res.status(200).json({ msg: "Logged Out" });
@@ -137,15 +138,15 @@ export const refreshToken = async (req, res) => {
 
         res.cookie("accessToken", newAccessToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
             maxAge: 2 * 60 * 60 * 1000,
         });
 
         res.cookie("refreshToken", newRefreshToken, {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
             maxAge: 10 * 24 * 60 * 60 * 1000,
         });
 
