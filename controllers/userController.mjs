@@ -35,12 +35,12 @@ export const login = async (req, res) => {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-        const checkPassword = await bcrypt.compare(password, user.password);
-        if (!checkPassword) return res.status(400).json({ message: "Invalid credentials" });
-
         if (role && role !== user.role) {
             return res.status(400).json({ message: "Invalid role" });
         }
+
+        const checkPassword = await bcrypt.compare(password, user.password);
+        if (!checkPassword) return res.status(400).json({ message: "Invalid credentials" });
 
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
@@ -50,15 +50,15 @@ export const login = async (req, res) => {
 
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: false,
+            sameSite: "lax",
             maxAge: 2 * 60 * 60 * 1000
         })
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: false,
+            sameSite: "lax",
             maxAge: 10 * 24 * 60 * 60 * 1000
         });
 
@@ -88,13 +88,13 @@ export const logoutUser = async (req, res) => {
         await user.save();
         res.clearCookie("accessToken", {
             httpOnly: true,
-            secure: true,
-            sameSite: "none"
+            secure: false,
+            sameSite: "lax",
         });
         res.clearCookie("refreshToken", {
             httpOnly: true,
-            secure: true,
-            sameSite: "none"
+            secure: false,
+            sameSite: "lax",
         });
 
         res.status(200).json({ msg: "Logged Out" });
@@ -119,7 +119,7 @@ export const getUser = async (req, res) => {
 
 export const refreshToken = async (req, res) => {
     try {
-        const token = req.cookies?.refreshToken;
+        const token = req.cookies.refreshToken;
         if (!token) return res.status(401).json({ msg: "No refresh token" });
 
         const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
@@ -137,19 +137,23 @@ export const refreshToken = async (req, res) => {
 
         res.cookie("accessToken", newAccessToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: false,
+            sameSite: "lax",
             maxAge: 2 * 60 * 60 * 1000,
         });
 
         res.cookie("refreshToken", newRefreshToken, {
             httpOnly: true,
-            secure: isProduction,
-            sameSite: "none",
+            secure: false,
+            sameSite: "lax",
             maxAge: 10 * 24 * 60 * 60 * 1000,
         });
 
-        res.status(200).json({ msg: "New access token issued" });
+        res.status(200).json({
+            msg: "New access token issued",
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+        });
     } catch (err) {
         return res.status(403).json({ msg: "Invalid or expired refresh token" });
     }

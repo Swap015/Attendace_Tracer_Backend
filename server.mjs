@@ -1,31 +1,28 @@
 import express from "express";
 import cors from "cors";
-import mongoose from "mongoose";
 import attendanceRoutes from "./routes/attendanceRoutes.mjs"
 import userRoutes from "./routes/userRoutes.mjs"
 import leaveRoutes from "./routes/leaveRoutes.mjs"
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import connectDB from "./configs/db.mjs";
 
 
 dotenv.config();
 const app = express();
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 app.use(express.json());
 app.use(cookieParser());
 
 app.use(cors({
-    origin: "https://attendace-tracer-frontend.vercel.app",
+    origin: FRONTEND_URL,
     credentials: true,
 }));
 
 
 // Connect MongoDB
-mongoose
-    .connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB connected ✅✅"))
-    .catch(err => console.error(err));
-
+connectDB();
 
 // Routes
 
