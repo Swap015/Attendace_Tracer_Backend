@@ -16,7 +16,14 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(cors({
-    origin: FRONTEND_URL,
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true); 
+        if (FRONTEND_URL.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"), false);
+        }
+    },
     credentials: true,
 }));
 
